@@ -1,26 +1,27 @@
 package ma.emsi.aitelmahjoub.test1;
 
-import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 
 public class Test1 {
-	public static void main(String[] args) {
-		// Récupère la clé d'API depuis la variable d'environnement GEMINI_KEY
-		String cle = System.getenv("GEMINI_KEY");
+    public static void main(String[] args) {
+        String cle = System.getenv("GEMINI_KEY");
 
-		// Création du modèle via le pattern builder
-		ChatModel modele = GoogleAiGeminiChatModel
-				.builder()
-				.apiKey(cle)
-				.modelName("gemini-2.5-flash")
-				.temperature(0.7)
-				.build();
+        if (cle == null || cle.isEmpty()) {
+            System.err.println("Erreur : La variable GEMINI_KEY n'est pas définie !");
+            return;
+        }
 
-		// Pose une question au modèle
-		String reponse = modele.chat("Quelle est la capitale de la France ?");
+        // Utiliser gemini-2.5-flash (stable et récent)
+        ChatLanguageModel modele = GoogleAiGeminiChatModel
+                .builder()
+                .apiKey(cle)
+                .modelName("gemini-2.5-flash")
+                .temperature(0.7)
+                .build();
 
-		// Affiche la réponse du modèle
-		System.out.println(reponse);
-	}
-
+        System.out.println("Question : Quelle est la capitale de la France ?");
+        String reponse = modele.generate("Quelle est la capitale de la France ?");
+        System.out.println("Réponse : " + reponse);
+    }
 }
