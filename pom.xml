@@ -12,31 +12,53 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <langchain4j.version>0.32.0</langchain4j.version>
+        <langchain4j.version>0.36.2</langchain4j.version>
     </properties>
 
     <dependencies>
-        <!-- LangChain4j Google AI Gemini -->
-
-        <!-- LangChain4j Core -->
+        <!-- Core LangChain4j  -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>0.36.2</version>
+            <version>${langchain4j.version}</version>
         </dependency>
-
-        <!-- LangChain4j Google AI Gemini -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
+            <version>0.35.0</version>
+        </dependency>
+        <!-- Implémentation Google Gemini -->
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-google-ai-gemini</artifactId>
-            <version>0.36.2</version>
+            <version>${langchain4j.version}</version>
         </dependency>
 
-        <!-- SLF4J Simple Logging -->
+        <!-- Embeddings (NÉCESSAIRE pour le RAG) -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-embeddings-all-minilm-l6-v2</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
+        <!-- Document loaders (NÉCESSAIRE pour charger les fichiers) -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-document-parser-apache-tika</artifactId>
+            <version>${langchain4j.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <artifactId>slf4j-jdk14</artifactId>
             <version>2.0.17</version>
         </dependency>
+        
+    <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.15.1</version>
+    </dependency>
+
     </dependencies>
 </project>
