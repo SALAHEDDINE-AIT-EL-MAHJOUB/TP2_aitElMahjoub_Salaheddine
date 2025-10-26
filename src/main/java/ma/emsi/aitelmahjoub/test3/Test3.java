@@ -18,7 +18,7 @@ public class Test3 {
 
         EmbeddingModel embeddingModel = GoogleAiEmbeddingModel.builder()
                 .apiKey(apiKey)
-                .modelName("text-embedding-004")  // ✅ CORRECT - supporte embedContent
+                .modelName("text-embedding-004")  
                 .timeout(Duration.ofSeconds(60))
                 .maxRetries(2)
                 .build();
