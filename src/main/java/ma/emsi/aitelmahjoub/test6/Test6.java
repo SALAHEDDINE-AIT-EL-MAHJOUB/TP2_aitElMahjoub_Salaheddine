@@ -4,13 +4,15 @@ import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.SystemMessage;
 import ma.emsi.aitelmahjoub.tools.meteo.MeteoTool;
 
 import java.util.Scanner;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Assistant avec outil météo
+ Assistant avec outil météo et logging
  */
 public class Test6 {
 
@@ -20,20 +22,25 @@ public class Test6 {
     }
 
     public static void main(String[] args) {
+        // Configuration du logging
+        setupLogging();
+
+        // Récupération de la clé API
         String llmKey = System.getenv("GEMINI_KEY");
 
-        // ChatLanguageModel
+        // Création du modèle LLM avec logging 
         ChatLanguageModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(llmKey)
-                .modelName("gemini-2.0-flash-exp")
+                .modelName("gemini-2.0-flash")
                 .temperature(0.7)
+                .logRequestsAndResponses(true) 
                 .build();
 
         // Création de l'assistant avec l'outil météo
         AssistantMeteo assistant = AiServices.builder(AssistantMeteo.class)
                 .chatLanguageModel(model)
                 .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
-                .tools(new MeteoTool()) 
+                .tools(new MeteoTool())  
                 .build();
 
         System.out.println("=== Assistant Météo ===");
@@ -41,18 +48,15 @@ public class Test6 {
 
         
         Scanner scanner = new Scanner(System.in);
-
         while (true) {
             System.out.print("Question: ");
             String question = scanner.nextLine().trim();
 
-            // Condition de sortie
             if (question.equalsIgnoreCase("q")) {
                 System.out.println("Au revoir!");
                 break;
             }
 
-            // Ignorer les entrées vides
             if (question.isEmpty()) {
                 continue;
             }
@@ -65,5 +69,16 @@ public class Test6 {
         }
 
         scanner.close();
+    }
+
+    // Méthode pour configurer le logging LangChain4j
+    private static void setupLogging() {
+        Logger logger = Logger.getLogger("dev.langchain4j");
+        logger.setLevel(Level.FINE);
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setLevel(Level.FINE);
+        logger.addHandler(handler);
+
+       
     }
 }
