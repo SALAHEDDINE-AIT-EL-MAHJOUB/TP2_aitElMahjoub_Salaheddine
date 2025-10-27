@@ -33,7 +33,7 @@ public class Test5 {
     public static void main(String[] args) {
         String llmKey = System.getenv("GEMINI_KEY");
 
-        // Température basse pour plus de précision avec le RAG
+        
         ChatLanguageModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(llmKey)
                 .modelName("gemini-2.5-flash")
@@ -43,7 +43,7 @@ public class Test5 {
         // Création du modèle d'embeddings
         EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel();
 
-        // Chargement du document PDF avec le bon parser
+        // Chargement du document PDF 
         String nomDocument = "rag.PDF";
         Document document = FileSystemDocumentLoader.loadDocument(
                 Paths.get(nomDocument),
@@ -53,13 +53,13 @@ public class Test5 {
         // Découpage du document en segments avec overlap
         DocumentSplitter splitter = DocumentSplitters.recursive(
                 300,  // taille du chunk
-                50    // overlap pour garder le contexte
+                50    // overlap 
         );
         List<TextSegment> segments = splitter.split(document);
 
         System.out.println("Nombre de segments créés: " + segments.size());
 
-        // Création de la base vectorielle en mémoire
+        // Création de la base vectorielle 
         EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
 
         // Calcul des embeddings et stockage
@@ -85,7 +85,7 @@ public class Test5 {
 
         System.out.println("Posez une questions  (tapez 'q' pour quitter)\n");
 
-        // Boucle interactive
+        
         Scanner scanner = new Scanner(System.in);
         while (true) {
             System.out.print("questions: ");
@@ -102,7 +102,7 @@ public class Test5 {
                 continue;
             }
 
-            // Obtenir et afficher la réponse
+            // Afficher la réponse
             System.out.println("\nAssistant: ");
             String reponse = assistant.chat(question);
             System.out.println(reponse);
@@ -113,3 +113,4 @@ public class Test5 {
     }
 
 }
+
