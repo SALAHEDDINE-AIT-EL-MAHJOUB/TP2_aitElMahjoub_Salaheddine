@@ -19,6 +19,7 @@ import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Scanner;
 
 /**
  * Le RAG facile - Version corrigée
@@ -82,11 +83,33 @@ public class Test5 {
                 .contentRetriever(contentRetriever)
                 .build();
 
-        // Test
-        String question = " fait moi  un quiz avec QCM sur le machine learning en utilisant le support de cours?";
-        String reponse = assistant.chat(question);
+        System.out.println("Posez une questions  (tapez 'q' pour quitter)\n");
 
-        System.out.println("Question: " + question);
-        System.out.println("Réponse: " + reponse);
+        // Boucle interactive
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            System.out.print("questions: ");
+            String question = scanner.nextLine().trim();
+
+            // Condition de sortie
+            if (question.equalsIgnoreCase("q")) {
+                System.out.println("Au revoir!");
+                break;
+            }
+
+            // Ignorer les entrées vides
+            if (question.isEmpty()) {
+                continue;
+            }
+
+            // Obtenir et afficher la réponse
+            System.out.println("\nAssistant: ");
+            String reponse = assistant.chat(question);
+            System.out.println(reponse);
+            System.out.println("\n" + "-".repeat(80) + "\n");
+        }
+
+        scanner.close();
     }
+
 }
