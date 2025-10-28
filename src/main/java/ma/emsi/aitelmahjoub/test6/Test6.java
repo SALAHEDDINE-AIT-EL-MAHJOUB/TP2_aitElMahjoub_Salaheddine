@@ -32,7 +32,7 @@ public class Test6 {
         ChatLanguageModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(llmKey)
                 .modelName("gemini-2.0-flash")
-                .temperature(0.7)
+                .temperature(0.3)
                 .logRequestsAndResponses(true) 
                 .build();
 
@@ -82,3 +82,4 @@ public class Test6 {
        
     }
 }
+
