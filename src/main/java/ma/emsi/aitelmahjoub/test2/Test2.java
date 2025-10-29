@@ -1,34 +1,73 @@
 package ma.emsi.aitelmahjoub.test2;
 
+
+import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
-
+import dev.langchain4j.model.input.Prompt;
+import dev.langchain4j.model.input.PromptTemplate;
+import dev.langchain4j.model.output.Response;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Test2 {
     public static void main(String[] args) {
-        // Récupère la clé d'API depuis la variable d'environnement GEMINI_KEY
-        String cle = System.getenv("GEMINI_KEY");
+        String apiKey = System.getenv("GEMINI_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            System.err.println("Missing GEMINI_KEY environment variable.");
+            return;
+        }
 
-        // Création du modèle via le pattern builder
-        ChatLanguageModel modele = GoogleAiGeminiChatModel
-                .builder()
-                .apiKey(cle)
-                .modelName("gemini-2.0-flash-exp")
+        String modelName = System.getenv("GEMINI_MODEL");
+        if (modelName == null || modelName.isBlank()) {
+            modelName = "gemini-2.5-flash";
+        }
+
+        ChatLanguageModel model = GoogleAiGeminiChatModel.builder()
+                .apiKey(apiKey)
+                .modelName(modelName)
                 .temperature(0.7)
+                .maxOutputTokens(1024)
+                .timeout(Duration.ofSeconds(120))
                 .build();
 
-        // Exemple de texte à traduire
-        String texteFrancais = "Bonjour, comment allez-vous ?";
+        PromptTemplate translateTemplate = PromptTemplate.from(
+                "Traduis le texte suivant en anglais : {{texte}}"
+        );
 
-        // Création du prompt directement
-        String prompt = "Traduis le texte suivant en anglais : " + texteFrancais;
 
-        // Envoie le prompt au modèle
-        String reponse = modele.generate(prompt);
 
-        // Affiche le prompt envoyé et la réponse
-        System.out.println("Prompt envoyé : " + prompt);
-        System.out.println("Réponse du modèle : " + reponse);
+
+        try (Scanner scanner = new Scanner(System.in)) {
+            System.out.print("Texte à traduire : ");
+            String texte = scanner.nextLine();
+            if (texte == null || texte.isBlank()) {
+                System.err.println("Aucun texte fourni, arrêt.");
+                return;
+            }
+            try {
+                Prompt prompt = translateTemplate.apply(Map.of("texte", texte));
+
+                System.out.println(" Prompt envoyé au modèle :");
+                System.out.println(prompt.text());
+                Response<AiMessage> response = model.generate(prompt.toUserMessage());
+
+                System.out.println("Traduction : " + response.content().text());
+
+                System.out.println(" Informations sur la requête :");
+                System.out.println(" - Tokens d'entrée  : " + response.tokenUsage().inputTokenCount());
+                System.out.println(" - Tokens de sortie : " + response.tokenUsage().outputTokenCount());
+                System.out.println(" - Total de tokens  : " + response.tokenUsage().totalTokenCount());
+
+
+            } catch (RuntimeException e) {
+                {
+                    System.err.println("La requete a expire avant d'obtenir une reponse. Veuillez reessayer ou poser une question plus concise.");
+                }
+            }
+        }
     }
+
+
 }
