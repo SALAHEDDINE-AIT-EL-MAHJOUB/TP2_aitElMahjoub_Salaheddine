@@ -1,116 +1,99 @@
 package ma.emsi.aitelmahjoub.test5;
 
 import dev.langchain4j.data.document.Document;
-import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader;
-import dev.langchain4j.data.document.parser.apache.pdfbox.ApachePdfBoxDocumentParser;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
-import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
-import dev.langchain4j.model.embedding.onnx.allminilml6v2.AllMiniLmL6V2EmbeddingModel;
+import dev.langchain4j.model.googleai.GoogleAiEmbeddingModel;
 import dev.langchain4j.model.googleai.GoogleAiGeminiChatModel;
 import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 
-import java.nio.file.Paths;
-import java.util.List;
+
+import java.time.Duration;
 import java.util.Scanner;
 
-/**
- * Le RAG facile - Version corrigée
- */
 public class Test5 {
 
+    // Assistant conversationnel
     interface Assistant {
+        // Prend un message de l'utilisateur et retourne une réponse du LLM.
         String chat(String userMessage);
     }
 
     public static void main(String[] args) {
         String llmKey = System.getenv("GEMINI_KEY");
-
-        
+        if (llmKey == null || llmKey.isBlank()) {
+            System.err.println("GEMINI_KEY environment variable is not set.");
+            return;
+        }
+        // Mettre une température qui ne dépasse pas 0,3.
+        // Le RAG sert à mieux contrôler l'exactitude des informations données par le LLM
+        // et il est donc logique de diminuer la température.
         ChatLanguageModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(llmKey)
                 .modelName("gemini-2.5-flash")
                 .temperature(0.3)
+                .timeout(Duration.ofSeconds(300))
                 .build();
 
-        // Création du modèle d'embeddings
-        EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel();
+        EmbeddingModel embeddingModel = GoogleAiEmbeddingModel.builder()
+                .apiKey(llmKey)
+                .modelName("text-embedding-004")
+                .build();
 
-        // Chargement du document PDF 
-        String nomDocument = "rag.PDF";
-        Document document = FileSystemDocumentLoader.loadDocument(
-                Paths.get(nomDocument),
-                new ApachePdfBoxDocumentParser()
-        );
-
-        // Découpage du document en segments avec overlap
-        DocumentSplitter splitter = DocumentSplitters.recursive(
-                300,  // taille du chunk
-                50    // overlap 
-        );
-        List<TextSegment> segments = splitter.split(document);
-
-        System.out.println("Nombre de segments créés: " + segments.size());
-
-        // Création de la base vectorielle 
+        // Chargement du document, sous la forme d'embeddings, dans une base vectorielle en mémoire
+        String nomDocument = "langchain4j.pdf";
+        System.out.println("Chargement du document " + nomDocument + "...");
+        Document document = FileSystemDocumentLoader.loadDocument(nomDocument);
         EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
-
-        // Calcul des embeddings et stockage
-        for (TextSegment segment : segments) {
-            Embedding embedding = embeddingModel.embed(segment).content();
-            embeddingStore.add(embedding, segment);
-        }
-
-        // Création du content retriever
-        EmbeddingStoreContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
+        // Calcule les embeddings et les enregistre dans la base vectorielle
+        System.out.println("Découpage du document et calcul des embeddings...");
+        EmbeddingStoreIngestor ingestor = EmbeddingStoreIngestor.builder()
+                .documentSplitter(DocumentSplitters.recursive(500, 100))
                 .embeddingStore(embeddingStore)
                 .embeddingModel(embeddingModel)
-                .maxResults(2)
-                .minScore(0.5)
                 .build();
+        ingestor.ingest(document);
+        System.out.println("Le document est prêt.");
 
-        // Création de l'assistant conversationnel
-        Assistant assistant = AiServices.builder(Assistant.class)
-                .chatLanguageModel(model)
-                .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
-                .contentRetriever(contentRetriever)
-                .build();
+        // Création de l'assistant conversationnel, avec une mémoire.
+        // L'implémentation de Assistant est faite par LangChain4j.
+        // L'assistant gardera en mémoire les 10 derniers messages.
+        // La base vectorielle en mémoire est utilisée pour retrouver les embeddings.
+        Assistant assistant =
 
-        System.out.println("Posez une questions  (tapez 'q' pour quitter)\n");
+                AiServices.builder(Assistant.class)
+                        .chatLanguageModel(model)
+                        .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
+                        .contentRetriever(EmbeddingStoreContentRetriever.builder()
+                                .embeddingStore(embeddingStore)
+                                .embeddingModel(embeddingModel)
+                                .maxResults(5)
+                                .build())
+                        .build();
+        // Boucle de conversation
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (true) {
+                System.out.print("\nPosez votre question : ");
+                String question = scanner.nextLine();
 
-        
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            System.out.print("questions: ");
-            String question = scanner.nextLine().trim();
+                if ("exit".equalsIgnoreCase(question) || "quit".equalsIgnoreCase(question)) {
+                    break;
+                }
 
-            // Condition de sortie
-            if (question.equalsIgnoreCase("q")) {
-                System.out.println("Au revoir!");
-                break;
+
+                String reponse = assistant.chat(question);
+                // Affiche la réponse du LLM.
+                System.out.println("Réponse : " + reponse);
             }
-
-            // Ignorer les entrées vides
-            if (question.isEmpty()) {
-                continue;
-            }
-
-            // Afficher la réponse
-            System.out.println("\nAssistant: ");
-            String reponse = assistant.chat(question);
-            System.out.println(reponse);
-            System.out.println("\n" + "-".repeat(80) + "\n");
         }
-
-        scanner.close();
     }
 
 }
-
